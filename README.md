@@ -41,12 +41,9 @@ Antes de comenzar asegúrate de contar con:
 └── assets                # Recursos estáticos (iconos, fuentes, etc.)
 ```
 
-
 ## Scripts disponibles
 - `npm start`: Inicia el servidor de desarrollo de Expo.
 - `npm run android`: Lanza la aplicación en un emulador o dispositivo Android.
 - `npm run ios`: Lanza la aplicación en un simulador de iOS.
 - `npm run web`: Ejecuta la aplicación en el navegador.
 
-## Licencia
-Este proyecto forma parte del ecosistema Trackify. Ajusta este apartado según las políticas de tu organización.

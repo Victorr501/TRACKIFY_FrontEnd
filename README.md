@@ -41,11 +41,6 @@ Antes de comenzar asegúrate de contar con:
 └── assets                # Recursos estáticos (iconos, fuentes, etc.)
 ```
 
-## Próximos pasos sugeridos
-- Integrar las pantallas con el backend de Trackify para manejar autenticación real.
-- Añadir validaciones y mensajes de error en los formularios.
-- Implementar gestión de estado global (por ejemplo, Redux o Context API) si la aplicación crece.
-- Agregar pruebas automatizadas y flujos de integración continua.
 
 ## Scripts disponibles
 - `npm start`: Inicia el servidor de desarrollo de Expo.

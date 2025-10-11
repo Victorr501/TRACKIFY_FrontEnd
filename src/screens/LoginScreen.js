@@ -14,7 +14,7 @@ const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [visible, setVisible] = useState(false);
-
+    const [error, setError] = useState('');
 
 
     //Pantalla
@@ -60,9 +60,10 @@ const LoginScreen = ({ navigation }) => {
                 ¿No tienes cuenta? Regístrate aquí
                 </Text>
             </TouchableOpacity>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
     )
-
 }
 
 

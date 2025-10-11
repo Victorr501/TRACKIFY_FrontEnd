@@ -7,6 +7,8 @@ import {
     Alert,
     StyleSheet,
     TouchableOpacity } from 'react-native';
+import { isValidEmail } from '../utils/validation';
+import AuthService from '../services/AuthService';
 
 const RegisterScreen = ({ navigation }) => {
   // Variables
@@ -18,9 +20,44 @@ const RegisterScreen = ({ navigation }) => {
   const [visible, setVisible] = useState(false);
   const [repetirVisible, setRepetirVisible] = useState(false);
 
+  const [error, setError] = useState('');
+
   // Método para registrar (vacío por ahora)
-  const handleRegister = () => {
-    
+  const handleRegister = async () => {
+    setError("");
+
+    if (!name || !email || !password || !confirmPassword) {
+      setError('Por favor rellena todos los campos.');
+      return;
+    };
+
+    if(!isValidEmail(email)){
+      setError('Introduce un correo electrónico válido.');
+      return;
+    };
+
+    if(password !== confirmPassword){
+      setError("Las constraseñas no coinciden")
+      return;
+    }
+
+    if(password.length < 5){
+      setError("La constraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    try{
+      const res = await AuthService.register({
+        username: name,
+        email,
+        password,
+      });
+      console.log("Registro correcto:",res);
+      navigation.replace("Home");
+    }catch (error) {
+      console.error('❌ Error de registro:', error);
+    }
+
   };
 
 
@@ -98,6 +135,8 @@ const RegisterScreen = ({ navigation }) => {
         >
             <Text style={styles.backButtonText}>Volver atrás</Text>
         </TouchableOpacity>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 };

@@ -1,5 +1,4 @@
-import { register } from 'react-native/types_generated/Libraries/Renderer/shims/ReactNativeViewConfigRegistry';
-import api from './api.js';
+import api from './Api.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = "access_token";
@@ -25,17 +24,33 @@ const AuthService = {
 
     //Registro
     async register(data){
-        const response = await api.post('/auth/register', {
-            username: data.username,
-            email: data.email,
-            password: data.password,
+        console.log("📤 Enviando datos:", data);
+
+        const form = new URLSearchParams();
+        form.append("username", data.username);
+        form.append("email", data.email);
+        form.append("password", data.password);
+        const response = await api.post('/auth/register',form.toString() , {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         });
+
+        const token = response.data?.access_token;
+
+        if(token){
+            await AsyncStorage.setItem(TOKEN_KEY, token);
+        }
+
         return response.data;
     },
 
+    async logout(){
+        await AsyncStorage.removeItem(TOKEN_KEY);
+    },
 
     async getCurrentUser() {
         const response = await api.get('/auth/me');
         return response.data;
     },
 }
+
+export default AuthService;

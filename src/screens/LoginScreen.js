@@ -7,6 +7,8 @@ import {
     Alert,
     StyleSheet,
     TouchableOpacity } from 'react-native';
+import { isValidEmail } from '../utils/validation';
+import AuthService from '../services/AuthService';
 
 const LoginScreen = ({ navigation }) => {
 
@@ -16,6 +18,31 @@ const LoginScreen = ({ navigation }) => {
     const [visible, setVisible] = useState(false);
     const [error, setError] = useState('');
 
+    const handleLogin = async () => {
+      setError("");
+
+      if (!email || !password){
+        setError('Por favor rellena todos los campos.');
+        return;
+      }
+
+      if (!isValidEmail(email)){
+        setError('Introduce un correo electrónico válido');
+        return;
+      }
+
+      try{
+        const res = await AuthService.login({
+          email,
+          password,
+        });
+        console.log("Login correcto", res);
+        navigation.replace('Home');
+      } catch (error){
+        console.error("Error de login: " , error);
+        setError("Credenciales incorrectas o servidor no disponible.");
+      }
+    }
 
     //Pantalla
     return (
@@ -51,7 +78,7 @@ const LoginScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={() => null}>
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
                 <Text style={styles.buttonText}>Entrar</Text>
             </TouchableOpacity>
 
@@ -75,6 +102,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 30,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 40,
+    color: "#333",
   },
   logo: {
     fontSize: 38,

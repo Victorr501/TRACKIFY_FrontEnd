@@ -43,8 +43,21 @@ const AuthService = {
         return response.data;
     },
 
+    //Cerrar sesion
     async logout(){
-        await AsyncStorage.removeItem(TOKEN_KEY);
+
+        try{
+            const response = await api.post('/auth/logout');
+            console.log("Cierre de sesion", response.data);
+
+            await AsyncStorage.removeItem(TOKEN_KEY);
+            console.log("Token eliminado correctamente");
+            return response.data;
+        } catch (error){
+            console.error("Error al cerrar sesión:" , error);
+            await AsyncStorage.removeItem(TOKEN_KEY);
+            throw error;
+        }
     },
 
     async getCurrentUser() {

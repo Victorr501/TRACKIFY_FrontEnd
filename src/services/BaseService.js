@@ -14,7 +14,9 @@ export default class BaseService{
 
     //Obetner por ID
     async getById(id){
+        console.log("🔍 GET:", `${this.endpoint}/${id}`);
         const response = await this.api.get(`${this.endpoint}/${id}`);
+        console.log("✅ Respuesta del backend:", response.data);
         return response.data;
     }
 

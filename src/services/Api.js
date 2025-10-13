@@ -29,7 +29,7 @@ api.interceptors.request.use(
 //Metodo auxiliar para obtener el token guardado
 async function getToken() {
     try {
-        const storedToken = AsyncStorage?.getItem('access_token');
+        const storedToken = await AsyncStorage.getItem('access_token');
         return storedToken;
     } catch (err) {
         console.error("Error obteniendo token:", err);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert,  SafeAreaView,  Platform   } from 'react-native';
 import AuthService from '../services/AuthService';
-
+import PerfilScreen from './home/PerfilScreen';
 
 // --- Simulaciones de pantallas del Home ---
 const HabitosScreen = () => (
@@ -16,9 +16,7 @@ const EstadisticasScreen = () => (
   <Text style={styles.contentText}>📊 Aquí irán tus estadísticas de progreso</Text>
 );
 
-const PerfilScreen = () => (
-  <Text style={styles.contentText}>👤 Aquí podrás editar tu perfil</Text>
-);
+
 
 // --- Botones ---
 const BottomTabBar = ({ onTabPress }) => {
@@ -101,7 +99,7 @@ const HomeScreen = ({navigation}) => {
         case 'estadisticas':
           return <EstadisticasScreen />;
         case 'perfil':
-          return <PerfilScreen />;
+          return <PerfilScreen  />;
         default:
           return <HabitosScreen />;
     }

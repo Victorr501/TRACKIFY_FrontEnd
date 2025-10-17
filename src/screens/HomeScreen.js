@@ -99,7 +99,7 @@ const HomeScreen = ({navigation}) => {
         case 'estadisticas':
           return <EstadisticasScreen />;
         case 'perfil':
-          return <PerfilScreen  />;
+          return <PerfilScreen navigation={navigation} />;
         default:
           return <HabitosScreen />;
     }

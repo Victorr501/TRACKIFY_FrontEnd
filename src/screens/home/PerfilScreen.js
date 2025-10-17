@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, Alert, Swit
 import UserService from "../../services/UserService"
 import AuthService from '../../services/AuthService';
 
-const PerfilScreen = () => {
+const PerfilScreen = ({navigation}) => {
 
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +95,8 @@ const PerfilScreen = () => {
             setPasswordEditarAntigua("");
             setPasswordEditarDuplicada("");
             setPasswordEditarNueva("");
+
+            navigation.replace("Login");
         } catch(err){
             console.error("Error cambiando contraseñas:", err);
         }
@@ -102,7 +104,44 @@ const PerfilScreen = () => {
     };
 
     const handleDeleteUser = () => {
-        Alert.alert("Eliminar usuario", "Funcionalidad en desarrollo");
+        if (!password.trim()) {
+            Alert.alert("Error", "Debes introducir tu contraseña para eliminar la cuenta.");
+            return;
+        }
+
+        
+        Alert.alert(
+            "Confirmar eliminación",
+            "Esta acción eliminará tu cuenta permanentemente. ¿Estás seguro?",
+            [
+                {
+                    text:"Cancelar",
+                    style: "cancel",
+                },
+                {
+                    text:"Eliminar",
+                    style: "destructive",
+                    onPress: () => {
+                        (async () => {
+                            try{
+                                const currentUser = await AuthService.getCurrentUser();
+                                const userId = currentUser.user.sub;
+
+                                await UserService.deleteUser(userId, password);
+
+                                setModalDeleteVisible(false);
+                                setPassword("");
+
+                                Alert.alert("Cuenta eliminada", "Tu cuenta ha sido eliminada correctamente.");
+                                navigation.replace("Login");
+                            }catch (err){
+                                console.error("Error al aliminar usuario:", err);
+                            }
+                        })()
+                    } 
+                }
+            ]
+        )
     };
 
     //Metodo inicial

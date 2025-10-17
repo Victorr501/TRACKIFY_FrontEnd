@@ -1,6 +1,7 @@
-import React, { useRef, useMemo, useState, use } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, Alert, Switch } from 'react-native';
 import UserService from "../../services/UserService"
+import AuthService from '../../services/AuthService';
 
 const PerfilScreen = () => {
 
@@ -9,21 +10,95 @@ const PerfilScreen = () => {
 
     //Para ver los modales
     const [modalEditarVisible, setModalEditarVisible] = useState(false);
+    const [modalEditarContraseñaVisible, setModalEditarContraseñaVisible] = useState(false);
+    const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
 
-    const [nombre, setNombre] = useState(user.username);
-    const [email, setEmail] = useState(user.email);
-    const [bio, setBio] = useState(user.bio);
-    const [notificaciones, setNotificaciones] = useState(true);
+    const [nombre, setNombre] = useState("");
+    const [email, setEmail] = useState("");
+    const [bio, setBio] = useState("");
+    const [notificaciones, setNotificaciones] = useState("");
 
+    const [passwordEditarAntigua, setPasswordEditarAntigua] = useState("");
+    const [passwordEditarNueva, setPasswordEditarNueva] = useState("");
+    const [passwordEditarDuplicada, setPasswordEditarDuplicada] = useState("");
+
+    const [visibleEditarAntigua, setVisibleEditarAntigua] = useState(false);
+    const [visibleEditarNueva, setVisibleEditarNueva] = useState(false);
+    const [visibleEditarDuplicada, setVisibleEditarDuplicada] = useState(false);
+
+    const [password, setPassword] = useState("");
+    const [visible, setVisible] = useState(false);
+
+    const [error, setError] = useState('');
 
     //Metodos vacios
-    const handleEditUser = () => {
-        Alert.alert("Editar usuario", "Funcionalidad en desarrollo");
-        console.log(user)
+    const handleEditUser = async () => {
+        // Validación simple antes de enviar
+        if (!nombre.trim() || !email.trim()) {
+            setError("El nombre y el correo no pueden estar vacíos");
+            setModalEditarVisible(false)
+            return;
+        }
+
+        try {
+            setError("");
+
+            const updateData = {
+                username: nombre,
+                email: email,
+                bio: bio || null,
+                notifications_enable: Boolean(notificaciones),
+            };
+        
+            console.log(updateData)
+
+            const updatedUser = await UserService.update(user.id, updateData);
+
+            setUser(updatedUser);
+
+            setModalEditarVisible(false);
+            Alert.alert("Usuario actualizado", "Los cambios se han guardado correctamente");
+        } catch(err){
+            console.error("Error al actualizar usuario:", err);
+            setError("No se pudo actualizar el usuario. Inténtalo más tarde");
+        }
     };
 
-    const handleChangePassword = () => {
-        Alert.alert("Editar contraseña", "Funcionalidad en desarrollo");
+    const handleChangePassword = async () => {
+        if (!passwordEditarAntigua || !passwordEditarNueva || !passwordEditarDuplicada) {
+        setError("Campos incompletos");
+        setModalEditarContraseñaVisible(false)
+        return;
+        }
+
+        if (passwordEditarNueva !== passwordEditarDuplicada) {
+        setError("Contraseñas no coinciden");
+        setModalEditarContraseñaVisible(false)
+        return;
+        }
+
+        if (passwordEditarNueva.length < 6) {
+        setError("Contraseña demasiado corta");
+        setModalEditarContraseñaVisible(false)
+        return;
+        }
+
+        try{
+            const currentUser = await AuthService.getCurrentUser();
+            const userId = currentUser.user.sub;
+
+            const result = await UserService.changePassword(userId, passwordEditarAntigua, passwordEditarNueva);
+
+            console.log("Contraseña actualizada:", result);
+
+            setModalEditarContraseñaVisible(false);
+            setPasswordEditarAntigua("");
+            setPasswordEditarDuplicada("");
+            setPasswordEditarNueva("");
+        } catch(err){
+            console.error("Error cambiando contraseñas:", err);
+        }
+
     };
 
     const handleDeleteUser = () => {
@@ -36,12 +111,16 @@ const PerfilScreen = () => {
         const loadUser = async () => {
             try{
                 const res = await AuthService.getCurrentUser();
-                const userLog = await UserService.getById(res.sub);
+                const userLog = await UserService.getById(res.user.sub);
                 console.log(userLog)
                 setUser(userLog);
+                setNombre(userLog.username);
+                setEmail(userLog.email);
+                setBio(userLog.bio || null);
+                setNotificaciones(userLog.notifications_enable);
 
             } catch (err){
-                console.log("Token inválido o sesión expirada");
+                console.log(err);
                 await AuthService.loadUser();
                 navigation.replace("Login")
             } finally {
@@ -51,13 +130,6 @@ const PerfilScreen = () => {
         loadUser();
     }, []);
 
-    if(isLoading){
-        return(
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Cargando datos...</Text>
-          </View>
-        )
-    }
 
     return (
         <View style={styles.container}>
@@ -68,7 +140,7 @@ const PerfilScreen = () => {
                 <Text style={styles.value}>{user?.username || "Usuario anónimo"}</Text>
 
                 <Text style={styles.label}>Biografía:</Text>
-                <Text style={styles.value}>{user?.biografia || "Aún no tienes biografía"}</Text>
+                <Text style={styles.value}>{user?.bio || "Aún no tienes biografía"}</Text>
             </View>
 
             {/* --- Botones */}
@@ -77,14 +149,16 @@ const PerfilScreen = () => {
                 <Text style={styles.buttonText}>Editar usuario</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.button} onPress={null}>
+                <TouchableOpacity style={styles.button} onPress={() => setModalEditarContraseñaVisible(true)}>
                 <Text style={styles.buttonText}>Editar contraseña</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={null}>
+                <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => setModalDeleteVisible(true)}>
                 <Text style={[styles.buttonText, styles.deleteButtonText]}>Eliminar usuario</Text>
                 </TouchableOpacity>
             </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             {/* --- Modal 1:  Editar usuario */}
             
@@ -151,12 +225,147 @@ const PerfilScreen = () => {
             </Modal>
 
             {/* --- Modal 2:  Editar contraseña */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalEditarContraseñaVisible}
+                onRequestClose={() => setModalEditarContraseñaVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Editar contraseña</Text>
+
+                        <View style = {styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Antigua contraseña"
+                                placeholderTextColor="#888"
+                                secureTextEntry = {!visibleEditarAntigua}
+                                value={passwordEditarAntigua}
+                                onChangeText={setPasswordEditarAntigua}
+                            />
+                            <TouchableOpacity 
+                                    style={styles.eyeBtn}
+                                    onPress={() => setVisibleEditarAntigua(!visibleEditarAntigua)}
+                                >
+                                    <Text style={styles.eyeText}>
+                                        {visibleEditarAntigua ? "🙈" : "👁️"}
+                                    </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style = {styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Nueva contraseña"
+                                placeholderTextColor="#888"
+                                secureTextEntry = {!visibleEditarNueva}
+                                value={passwordEditarNueva}
+                                onChangeText={setPasswordEditarNueva}
+                            />
+                            <TouchableOpacity 
+                                    style={styles.eyeBtn}
+                                    onPress={() => setVisibleEditarNueva(!visibleEditarNueva)}
+                                >
+                                    <Text style={styles.eyeText}>
+                                        {visibleEditarNueva ? "🙈" : "👁️"}
+                                    </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style = {styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Repite la contraseña"
+                                placeholderTextColor="#888"
+                                secureTextEntry = {!visibleEditarDuplicada}
+                                value={passwordEditarDuplicada}
+                                onChangeText={setPasswordEditarDuplicada}
+                            />
+                            <TouchableOpacity 
+                                    style={styles.eyeBtn}
+                                    onPress={() => setVisibleEditarDuplicada(!visibleEditarDuplicada)}
+                                >
+                                    <Text style={styles.eyeText}>
+                                        {visibleEditarDuplicada ? "🙈" : "👁️"}
+                                    </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.saveButton}
+                                onPress={handleChangePassword}
+                            >
+                                <Text style={styles.saveText}>Guardar contraseña</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setModalEditarContraseñaVisible(false)}
+                            >
+                                <Text style={styles.cancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+            {/* --- Modal 3:  Eliminar contraseña */}
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalDeleteVisible}
+                onRequestClose={() => setModalDeleteVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Eliminar cuenta</Text>
+
+                        <View style = {styles.passwordContainer}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Contraseña"
+                                placeholderTextColor="#888"
+                                secureTextEntry = {!visible}
+                                value={password}
+                                onChangeText={setPassword}
+                            />
+                            <TouchableOpacity 
+                                    style={styles.eyeBtn}
+                                    onPress={() => setVisible(!visible)}
+                                >
+                                    <Text style={styles.eyeText}>
+                                        {visible ? "🙈" : "👁️"}
+                                    </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.saveButton}
+                                onPress={handleDeleteUser}
+                            >
+                                <Text style={styles.saveText}>Eliminar Cuenta</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setModalDeleteVisible(false)}
+                            >
+                                <Text style={styles.cancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
         </View>
     );
 };
     
 const styles = StyleSheet.create({
+  // 📱 Pantalla principal
   container: {
     flex: 1,
     padding: 25,
@@ -196,6 +405,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#4f46e5',
     paddingVertical: 14,
+    paddingHorizontal: 10,
     borderRadius: 10,
     marginBottom: 15,
     alignItems: 'center',
@@ -211,7 +421,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 17,
     fontWeight: '600',
-    paddingHorizontal: 15,
   },
   deleteButton: {
     backgroundColor: '#fee2e2',
@@ -219,66 +428,93 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#b91c1c',
   },
-  // 🎨 Modal
+
+  // 🎨 Modal general
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   modalContainer: {
-    width: '85%',
+    width: '88%',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingVertical: 25,
-    paddingHorizontal: 20,
+    borderRadius: 18,
+    paddingVertical: 28,
+    paddingHorizontal: 25,
     shadowColor: '#000',
     shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 10,
+    elevation: 10,
   },
   modalTitle: {
     fontSize: 22,
     fontWeight: '700',
     color: '#111',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 25,
   },
+
+  // 🧾 Inputs generales
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderWidth: 1.2,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 16,
-    marginBottom: 12,
+    marginBottom: 14,
     color: '#333',
-    backgroundColor: '#fafafa',
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
+    backgroundColor: '#f9fafb',
   },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    marginVertical: 12,
   },
   switchLabel: {
     fontSize: 16,
     color: '#333',
   },
+
+  // 🔐 Inputs de contraseña con icono
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.2,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 15,
+  },
+  eyeText: {
+    fontSize: 20,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 10,
+  },
+
+  // ⚙️ Botones dentro de los modales
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 5,
+    marginTop: 10,
   },
   saveButton: {
     backgroundColor: '#4f46e5',
+    borderRadius: 10,
     paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 16,
     flex: 1,
     marginRight: 8,
     alignItems: 'center',
@@ -289,9 +525,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   cancelButton: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
     paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 16,
     flex: 1,
     marginLeft: 8,
     alignItems: 'center',
@@ -300,6 +537,14 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '600',
     fontSize: 16,
+  },
+
+  // ⚠️ Mensajes de error
+  errorText: {
+    color: '#b91c1c',
+    fontSize: 14,
+    marginBottom: 8,
+    textAlign: 'center',
   },
 });
 

@@ -8,7 +8,7 @@ const HabitosScreen = () => (
   <Text style={styles.contentText}>🧱 Aquí se mostrarán tus hábitos</Text>
 );
 
-const CalendarioScreen = () => (
+const CrearHabitoScreen = () => (
   <Text style={styles.contentText}>📅 Aquí verás tu calendario de hábitos</Text>
 );
 
@@ -95,7 +95,7 @@ const HomeScreen = ({navigation}) => {
         case 'habitos':
           return <HabitosScreen />;
         case 'calendario':
-          return <CalendarioScreen />;
+          return <CrearHabitoScreen />;
         case 'estadisticas':
           return <EstadisticasScreen />;
         case 'perfil':

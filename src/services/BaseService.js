@@ -20,7 +20,7 @@ export default class BaseService{
 
     //Crear nuevo
     async create(data){
-        const response = await this.api.post(this.endpoint, data);
+        const response = await this.api.post(`${this.endpoint}/`, data);
         return response.data;
     }
 

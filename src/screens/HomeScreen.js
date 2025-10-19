@@ -2,20 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert,  SafeAreaView,  Platform   } from 'react-native';
 import AuthService from '../services/AuthService';
 import PerfilScreen from './home/PerfilScreen';
+import CrearHabitoScreen from './home/CrearHabitoScreen';
 
 // --- Simulaciones de pantallas del Home ---
 const HabitosScreen = () => (
   <Text style={styles.contentText}>🧱 Aquí se mostrarán tus hábitos</Text>
 );
 
-const CrearHabitoScreen = () => (
-  <Text style={styles.contentText}>📅 Aquí verás tu calendario de hábitos</Text>
-);
-
 const EstadisticasScreen = () => (
   <Text style={styles.contentText}>📊 Aquí irán tus estadísticas de progreso</Text>
 );
-
 
 
 // --- Botones ---
@@ -37,10 +33,10 @@ const BottomTabBar = ({ onTabPress }) => {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabButton, activeTab === 'calendario' && styles.activeTab]}
-        onPress={() => handlePress('calendario')}
+        style={[styles.tabButton, activeTab === 'crear' && styles.activeTab]}
+        onPress={() => handlePress('crear')}
       >
-        <Text style={styles.tabIcon}>📅</Text>
+        <Text style={styles.tabIcon}>➕</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -94,7 +90,7 @@ const HomeScreen = ({navigation}) => {
       switch (activeScreen) {
         case 'habitos':
           return <HabitosScreen />;
-        case 'calendario':
+        case 'crear':
           return <CrearHabitoScreen />;
         case 'estadisticas':
           return <EstadisticasScreen />;

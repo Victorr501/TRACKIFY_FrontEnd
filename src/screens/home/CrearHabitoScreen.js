@@ -7,19 +7,18 @@ import {
     TextInput,
     TouchableOpacity,
     View,
-    SafeAreaView
 } from 'react-native';
 import HabitService from '../../services/HabitService';
 import AuthService from '../../services/AuthService';
 
 const daysOfWeek = [
-    { key: 'monday', label: 'Lun' },
-    { key: 'tuesday', label: 'Mar' },
-    { key: 'wednesday', label: 'Mié' },
-    { key: 'thursday', label: 'Jue' },
-    { key: 'friday', label: 'Vie' },
-    { key: 'saturday', label: 'Sáb' },
-    { key: 'sunday', label: 'Dom' },
+    { key: 1, label: 'Lun' },
+    { key: 2, label: 'Mar' },
+    { key: 3, label: 'Mié' },
+    { key: 4, label: 'Jue' },
+    { key: 5, label: 'Vie' },
+    { key: 6, label: 'Sáb' },
+    { key: 7, label: 'Dom' },
 ];
 
 const colorOptions = ['#6366F1', '#F97316', '#22C55E', '#F43F5E', '#0EA5E9', '#A855F7'];
@@ -50,11 +49,13 @@ const CrearHabitoScreen = () => {
     }, [name, frequency, selectedDays]);
 
     const toggleDay = (dayKey) => {
-        setSelectedDays((prev) =>
-            prev.includes(dayKey)
-                ? prev.filter((day) => day !== dayKey)
-                : [...prev, dayKey]
-        );
+        const keyAsNumber = Number(dayKey);
+        setSelectedDays((prev) => {
+            const updated = prev.includes(keyAsNumber)
+                ? prev.filter((day) => day !== keyAsNumber)
+                : [...prev, keyAsNumber];
+            return updated;
+        });
     };
 
     const handleFrequencyChange = (value) => {
@@ -130,7 +131,7 @@ const CrearHabitoScreen = () => {
 
     return (
         <ScrollView 
-            contentContainerStyle={styles.container}
+            contentContainerStyle={[styles.container, {paddingBottom: 100}]}
             showsHorizontalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             >

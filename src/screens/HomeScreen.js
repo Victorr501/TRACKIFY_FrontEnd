@@ -3,15 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert,  SafeAreaView,  Platfo
 import AuthService from '../services/AuthService';
 import PerfilScreen from './home/PerfilScreen';
 import CrearHabitoScreen from './home/CrearHabitoScreen';
+import RachaScreen from './home/RachaScreen';
 
 // --- Simulaciones de pantallas del Home ---
 const HabitosScreen = () => (
   <Text style={styles.contentText}>🧱 Aquí se mostrarán tus hábitos</Text>
 );
 
-const EstadisticasScreen = () => (
-  <Text style={styles.contentText}>📊 Aquí irán tus estadísticas de progreso</Text>
-);
 
 
 // --- Botones ---
@@ -40,10 +38,10 @@ const BottomTabBar = ({ onTabPress }) => {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabButton, activeTab === 'estadisticas'&& styles.activeTab]}
-        onPress={() => handlePress('estadisticas')}
+        style={[styles.tabButton, activeTab === 'racha'&& styles.activeTab]}
+        onPress={() => handlePress('racha')}
       >
-        <Text style={styles.tabIcon}>📊</Text>
+        <Text style={styles.tabIcon}>🔥</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -92,8 +90,8 @@ const HomeScreen = ({navigation}) => {
           return <HabitosScreen />;
         case 'crear':
           return <CrearHabitoScreen />;
-        case 'estadisticas':
-          return <EstadisticasScreen />;
+        case 'racha':
+          return <RachaScreen />;
         case 'perfil':
           return <PerfilScreen navigation={navigation} />;
         default:

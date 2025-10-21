@@ -1,5 +1,6 @@
 import api from './Api.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import jwtDecode from "jwt-decode";
 
 const TOKEN_KEY = "access_token";
 
@@ -64,6 +65,26 @@ const AuthService = {
         const response = await api.get('/auth/me');
         return response.data;
     },
+
+    async isTokenValid() {
+        try {
+            const token = await AsyncStorage.getItem('access_token');
+            if (!token) return false;
+
+            const decoded = jwtDecode(token);
+            const now = Date.now() / 1000; // tiempo actual en segundos
+
+            if (decoded.exp && decoded.exp > now) {
+                return true; // ✅ el token aún es válido
+            } else {
+                await AsyncStorage.removeItem('access_token'); // ❌ token expirado
+                return false;
+            }
+        } catch (err) {
+            console.error("Error verificando token:", err);
+            return false;
+        }
+    }
 }
 
 export default AuthService;

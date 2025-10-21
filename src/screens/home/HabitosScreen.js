@@ -12,6 +12,7 @@ import {
 import AuthService from '../../services/AuthService';
 import HabitService from '../../services/HabitService';
 import HabitLogsService from '../../services/HabitLongsService';
+import UserService from '../../services/UserService';
 
 const HabitosScreen = () => {
     const [userId, setUserId] = useState(null);
@@ -129,7 +130,10 @@ const HabitosScreen = () => {
         setCompletedHabits(todaysCompletion);
         const streak = calculateStreakInfo(logsData);
         setStreakInfo(streak);
-        return streak;
+        await UserService.update(userId, {
+            streak_count: streak.current,
+            max_streak: streak.max,
+        })
         } catch (err) {
         console.error('Error al actualizar los registros de hábitos:', err);
         return null;

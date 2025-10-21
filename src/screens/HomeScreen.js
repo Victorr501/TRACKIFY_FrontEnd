@@ -4,11 +4,9 @@ import AuthService from '../services/AuthService';
 import PerfilScreen from './home/PerfilScreen';
 import CrearHabitoScreen from './home/CrearHabitoScreen';
 import RachaScreen from './home/RachaScreen';
+import HabitosScreen from './home/HabitosScreen';
 
-// --- Simulaciones de pantallas del Home ---
-const HabitosScreen = () => (
-  <Text style={styles.contentText}>🧱 Aquí se mostrarán tus hábitos</Text>
-);
+
 
 
 

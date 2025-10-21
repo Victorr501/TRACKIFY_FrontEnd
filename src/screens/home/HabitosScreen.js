@@ -23,6 +23,12 @@ const HabitosScreen = () => {
     const [completedHabits, setCompletedHabits] = useState({});
     const [streakInfo, setStreakInfo] = useState({ current: 0, max: 0 });
 
+    useEffect(() => {
+        if (userId && habits.length > 0) {
+            updateHabitLogsState(); // 🔥 sincroniza hábitos completados desde el backend
+        }
+    }, [userId, habits]);
+
     const getDateKey = useCallback((value) => {
         if (!value) {
         return null;
@@ -157,6 +163,7 @@ const HabitosScreen = () => {
             const id = Number(res?.user?.sub);
             if (Number.isFinite(id)) {
             setUserId(id);
+            await updateHabitLogsState();
             } else {
             throw new Error('ID de usuario inválido');
             }
@@ -211,6 +218,7 @@ const HabitosScreen = () => {
         setRefreshing(true);
         try {
         await fetchHabits();
+        await updateHabitLogsState();
         } finally {
         setRefreshing(false);
         }
@@ -233,6 +241,8 @@ const HabitosScreen = () => {
             });
             setCompletedHabits((prev) => ({ ...prev, [habitId]: true }));
             Alert.alert('¡Buen trabajo!', 'Has completado este hábito hoy.');
+
+            await updateHabitLogsState();
         } catch (err) {
             
 
@@ -240,6 +250,7 @@ const HabitosScreen = () => {
             const backendMessage = err?.response?.data?.detail;
 
             if (err?.response?.status === 400 && backendMessage) {
+                setCompletedHabits((prev) => ({ ...prev, [habitId]: true }));
                 Alert.alert('Ya completado', backendMessage);
             } else {
                 console.error('Error al registrar el hábito completado:', err);

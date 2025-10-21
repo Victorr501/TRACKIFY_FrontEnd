@@ -65,6 +65,36 @@ const HabitosScreen = () => {
     fetchHabits();
   }, [fetchHabits]);
 
+  const currentDayNumber = useMemo(() => {
+    const jsDay = new Date().getDay();
+    return jsDay === 0 ? 7 : jsDay;
+  }, []);
+
+  const todaysHabits = useMemo(() => {
+    if (!Array.isArray(habits) || habits.length === 0) {
+      return [];
+    }
+
+    return habits.filter((habit) => {
+      if (habit?.frequency !== 'weekly') {
+        return true;
+      }
+
+      const rawDays = habit?.target_days;
+
+      const targetDays = Array.isArray(rawDays)
+        ? rawDays
+        : typeof rawDays === 'string'
+        ? rawDays
+            .split(',')
+            .map((value) => Number(value.trim()))
+            .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7)
+        : [];
+
+      return targetDays.includes(currentDayNumber);
+    });
+  }, [currentDayNumber, habits]);
+
   const onRefresh = useCallback(async () => {
     if (!userId) {
       return;
@@ -86,8 +116,11 @@ const HabitosScreen = () => {
 
       setCompletingId(habitId);
       try {
+
+        const today = new Date().toISOString().split('T')[0]; // formato YYYY-MM-DD
         await HabitLogsService.create({
           habit_id: habitId,
+          date: today,
           completed: true,
         });
         setCompletedHabits((prev) => ({ ...prev, [habitId]: true }));
@@ -162,12 +195,22 @@ const HabitosScreen = () => {
       );
     }
 
+    if (habits.length > 0) {
+      return (
+        <View style={styles.feedbackContainer}>
+          <Text style={styles.feedbackText}>
+            No tienes hábitos programados para hoy.
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.feedbackContainer}>
         <Text style={styles.feedbackText}>No tienes hábitos pendientes. ¡Crea uno para comenzar!</Text>
       </View>
     );
-  }, [error, fetchHabits, loading]);
+  }, [error, fetchHabits,habits.length, loading]);
 
   return (
     <View style={styles.container}>
@@ -178,10 +221,10 @@ const HabitosScreen = () => {
         </View>
       ) : (
         <FlatList
-          data={habits}
+          data={todaysHabits}
           keyExtractor={keyExtractor}
           renderItem={renderHabitItem}
-          contentContainerStyle={habits.length === 0 ? styles.listEmptyContent : styles.listContent}
+          contentContainerStyle={todaysHabits.length === 0 ? styles.listEmptyContent : styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />
           }

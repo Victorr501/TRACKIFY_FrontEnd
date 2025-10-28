@@ -48,18 +48,18 @@ const HabitosScreen = () => {
     }, []);
 
     const calculateStreakInfo = useCallback(
-        (logs) => {
+    (logs) => {
         if (!Array.isArray(logs) || logs.length === 0) {
-            return { current: 0, max: 0 };
+        return { current: 0, max: 0 };
         }
 
         const completedDates = logs
-            .filter((log) => log?.completed)
-            .map((log) => getDateKey(log.date))
-            .filter((dateKey) => Boolean(dateKey));
+        .filter((log) => log?.completed)
+        .map((log) => getDateKey(log.date))
+        .filter(Boolean);
 
         if (completedDates.length === 0) {
-            return { current: 0, max: 0 };
+        return { current: 0, max: 0 };
         }
 
         const uniqueDates = Array.from(new Set(completedDates)).sort();
@@ -70,36 +70,58 @@ const HabitosScreen = () => {
         let previousDate = null;
 
         uniqueDates.forEach((dateKey, index) => {
-            if (!previousDate) {
+        if (!previousDate) {
             currentStreakCounter = 1;
-            } else {
+        } else {
             const prev = new Date(previousDate);
             const current = new Date(dateKey);
             const diffInDays = Math.round(
-                (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
+            (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
             );
 
             if (diffInDays === 1) {
-                currentStreakCounter += 1;
+            currentStreakCounter += 1;
             } else {
-                currentStreakCounter = 1;
+            currentStreakCounter = 1;
             }
-            }
+        }
 
-            previousDate = dateKey;
+        previousDate = dateKey;
 
-            if (currentStreakCounter > maxStreak) {
+        if (currentStreakCounter > maxStreak) {
             maxStreak = currentStreakCounter;
-            }
+        }
 
-            if (index === uniqueDates.length - 1) {
+        if (index === uniqueDates.length - 1) {
             currentStreak = currentStreakCounter;
-            }
+        }
         });
 
+        // 🧠 --- Ajuste inteligente de racha ---
+        const lastDate = new Date(uniqueDates[uniqueDates.length - 1]);
+        const today = new Date();
+        const diffWithToday = Math.round(
+        (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // 🟢 Caso 1: Último hábito fue hoy → racha actual válida
+        if (diffWithToday === 0) {
         return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
-        },
-        [getDateKey]
+        }
+
+        // 🟡 Caso 2: Último hábito fue ayer → mantener racha (aún no ha hecho nada hoy)
+        if (diffWithToday === 1) {
+        return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
+        }
+
+        // 🔴 Caso 3: Han pasado 2 o más días → se rompe la racha
+        if (diffWithToday > 1) {
+        return { current: 0, max: Math.max(maxStreak, currentStreak) };
+        }
+
+        return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
+    },
+    [getDateKey]
     );
 
     const updateHabitLogsState = useCallback(async () => {
@@ -227,30 +249,39 @@ const HabitosScreen = () => {
         setRefreshing(false);
         }
     }, [fetchHabits, userId]);
+    
 
+    //Añadir habito
     const handleCompleteHabit = useCallback(
         async (habitId) => {
-        if (!habitId || completingId) {
-            return;
-        }
+            if (!habitId || completingId) return;
 
-        setCompletingId(habitId);
-        try {
-
+            setCompletingId(habitId);
+            try {
             const today = new Date().toISOString().split('T')[0]; // formato YYYY-MM-DD
+
             await HabitLogsService.create({
-            habit_id: habitId,
-            date: today,
-            completed: true,
+                habit_id: habitId,
+                date: today,
+                completed: true,
             });
+
             setCompletedHabits((prev) => ({ ...prev, [habitId]: true }));
             Alert.alert('¡Buen trabajo!', 'Has completado este hábito hoy.');
 
-            await updateHabitLogsState();
-        } catch (err) {
-            
+            const response = await HabitLogsService.getUserLogs(userId);
+            const logsData = Array.isArray(response) ? response : response?.data ?? [];
 
-            // ✅ Captura el mensaje que viene del backend
+            logsData.push({ habit_id: habitId, date: today, completed: true });
+
+            const streak = calculateStreakInfo(logsData);
+            setStreakInfo(streak);
+
+            await UserService.update(userId, {
+                streak_count: streak.current,
+                max_streak: streak.max,
+            });
+            } catch (err) {
             const backendMessage = err?.response?.data?.detail;
 
             if (err?.response?.status === 400 && backendMessage) {
@@ -263,13 +294,43 @@ const HabitosScreen = () => {
                 'Ocurrió un problema al registrar tu hábito. Intenta de nuevo más tarde.'
                 );
             }
-        } finally {
+            } finally {
             setCompletingId(null);
-        }
-        },
-        [completingId]
+            }
+        },[completingId, userId, calculateStreakInfo, getDateKey]
     );
 
+    // Eliminar hábito
+    const handleDeleteHabit = useCallback(
+    async (habitId) => {
+        if (!habitId) return;
+
+        Alert.alert(
+        'Eliminar hábito',
+        '¿Seguro que deseas eliminar este hábito? Esta acción no se puede deshacer.',
+        [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+            text: 'Eliminar',
+            style: 'destructive',
+            onPress: async () => {
+                try {
+                await HabitService.delete(habitId); // <- asegúrate de tener este endpoint en tu backend
+                setHabits((prev) => prev.filter((habit) => habit.id !== habitId));
+                Alert.alert('Eliminado', 'El hábito ha sido eliminado correctamente.');
+                } catch (err) {
+                console.error('Error al eliminar el hábito:', err);
+                Alert.alert('Error', 'No se pudo eliminar el hábito. Intenta de nuevo más tarde.');
+                }
+            },
+            },
+        ]
+        );
+    },
+    [setHabits]
+    );
+
+    //Esta es la tarjeta que muestra
     const renderHabitItem = useCallback(
         ({ item }) => {
         const isCompleted = completedHabits[item.id];
@@ -290,19 +351,31 @@ const HabitosScreen = () => {
                 </View>
             </View>
 
-            <TouchableOpacity
-                style={[styles.completeButton, (isCompleted || isProcessing) && styles.completeButtonDisabled]}
-                onPress={() => handleCompleteHabit(item.id)}
-                disabled={isCompleted || isProcessing}
-            >
-                {isProcessing ? (
-                <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                <Text style={styles.completeButtonText}>
-                    {isCompleted ? 'Completado' : 'Completar'}
-                </Text>
-                )}
-            </TouchableOpacity>
+            <View style={styles.actionsContainer}>
+                <TouchableOpacity
+                    style={[
+                    styles.completeButton,
+                    (isCompleted || isProcessing) && styles.completeButtonDisabled,
+                    ]}
+                    onPress={() => handleCompleteHabit(item.id)}
+                    disabled={isCompleted || isProcessing}
+                >
+                    {isProcessing ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                    <Text style={styles.completeButtonText}>
+                        {isCompleted ? '✅' : '☐'}
+                    </Text>
+                    )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteHabit(item.id)}
+                >
+                    <Text style={styles.deleteButtonText}>🗑️</Text>
+                </TouchableOpacity>
+                </View>
             </View>
         );
         },
@@ -311,6 +384,8 @@ const HabitosScreen = () => {
 
     const keyExtractor = useCallback((item) => item.id?.toString() ?? Math.random().toString(), []);
 
+
+    //Si hay algun error o si hay algo que no cuadra
     const listEmptyComponent = useMemo(() => {
         if (loading) {
         return null;
@@ -344,6 +419,8 @@ const HabitosScreen = () => {
         );
     }, [error, fetchHabits,habits.length, loading]);
 
+
+    //Lista de habitos
     return (
         <View style={styles.container}>
         {loading && habits.length === 0 ? (
@@ -435,19 +512,23 @@ const styles = StyleSheet.create({
         color: '#9ca3af',
     },
     completeButton: {
-        backgroundColor: '#6366F1',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
-        minWidth: 110,
-        alignItems: 'center',
+    backgroundColor: '#6366F1', // morado
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    minWidth: 90, // tamaño más pequeño pero igual al de eliminar
+    alignItems: 'center',
+    justifyContent: 'center',
     },
+
     completeButtonDisabled: {
-        backgroundColor: '#a5b4fc',
+    backgroundColor: '#a5b4fc',
     },
+
     completeButtonText: {
-        color: '#fff',
-        fontWeight: '600',
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13, // un poco más pequeño
     },
     feedbackContainer: {
         alignItems: 'center',
@@ -465,9 +546,29 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         backgroundColor: '#6366F1',
     },
-    retryButtonText: {
+    actionsContainer: {
+        flexDirection: 'column', // 🔥 uno encima del otro
+        alignItems: 'flex-end',  // los mantiene a la derecha
+        justifyContent: 'center',
+        marginLeft: 10, // pequeña separación respecto al texto
+    },
+
+    deleteButton: {
+        backgroundColor: '#EF4444', // rojo
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 10,
+        marginLeft: 8,
+        minWidth: 90, // mismo ancho que el de completar
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+    },
+
+    deleteButtonText: {
         color: '#fff',
         fontWeight: '600',
+        fontSize: 13,
     },
 });
 

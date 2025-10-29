@@ -47,10 +47,10 @@ const HabitosScreen = () => {
         return normalized.toISOString().split('T')[0];
     }, []);
 
-    const calculateStreakInfo = useCallback(
-    (logs) => {
+    //Calcula la racha
+    const calculateStreakInfo = useCallback((logs, maxUserStreak = 0, userStreak = 0) => {
         if (!Array.isArray(logs) || logs.length === 0) {
-        return { current: 0, max: 0 };
+        return { current: userStreak, max: maxUserStreak };
         }
 
         const completedDates = logs
@@ -106,24 +106,25 @@ const HabitosScreen = () => {
 
         // 🟢 Caso 1: Último hábito fue hoy → racha actual válida
         if (diffWithToday === 0) {
-        return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
+        return { current: currentStreak, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
         }
 
         // 🟡 Caso 2: Último hábito fue ayer → mantener racha (aún no ha hecho nada hoy)
         if (diffWithToday === 1) {
-        return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
+        return { current: currentStreak, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
         }
 
         // 🔴 Caso 3: Han pasado 2 o más días → se rompe la racha
         if (diffWithToday > 1) {
-        return { current: 0, max: Math.max(maxStreak, currentStreak) };
+        return { current: 0, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
         }
 
-        return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
+        return { current: currentStreak, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
     },
     [getDateKey]
     );
 
+    //Esto carga los logs
     const updateHabitLogsState = useCallback(async () => {
         if (!userId) {
         return null;
@@ -132,6 +133,8 @@ const HabitosScreen = () => {
         try {
         const response = await HabitLogsService.getUserLogs(userId);
         const logsData = Array.isArray(response) ? response : response?.data ?? [];
+
+        const user = await UserService.getById(userId);
 
         const todayKey = getDateKey(new Date());
         const todaysCompletion = {};
@@ -150,7 +153,7 @@ const HabitosScreen = () => {
         });
 
         setCompletedHabits(todaysCompletion);
-        const streak = calculateStreakInfo(logsData);
+        const streak = calculateStreakInfo(logsData, user.max_streak, user.streak_count);
         setStreakInfo(streak);
         await UserService.update(userId, {
             streak_count: streak.current,

@@ -49,9 +49,6 @@ const HabitosScreen = () => {
 
     //Calcula la racha
     const calculateStreakInfo = useCallback((logs, maxUserStreak = 0, userStreak = 0) => {
-        if (!Array.isArray(logs) || logs.length === 0) {
-        return { current: userStreak, max: maxUserStreak };
-        }
 
         const completedDates = logs
         .filter((log) => log?.completed)
@@ -59,67 +56,78 @@ const HabitosScreen = () => {
         .filter(Boolean);
 
         if (completedDates.length === 0) {
-        return { current: 0, max: 0 };
+        return { current: 0, max: maxUserStreak };
         }
 
         const uniqueDates = Array.from(new Set(completedDates)).sort();
 
-        let maxStreak = 0;
+        let maxStreak = Number(maxUserStreak) || 0;;
         let currentStreakCounter = 0;
-        let currentStreak = 0;
+        let currentStreak = userStreak;
         let previousDate = null;
 
         uniqueDates.forEach((dateKey, index) => {
-        if (!previousDate) {
-            currentStreakCounter = 1;
-        } else {
-            const prev = new Date(previousDate);
-            const current = new Date(dateKey);
-            const diffInDays = Math.round(
-            (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-            );
-
-            if (diffInDays === 1) {
-            currentStreakCounter += 1;
+            if (!previousDate) {
+                currentStreakCounter = 1;
             } else {
-            currentStreakCounter = 1;
+                const prev = new Date(previousDate);
+                const current = new Date(dateKey);
+                const diffInDays = Math.round(
+                (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
+                );
+
+                if (diffInDays === 1) {
+                currentStreakCounter += 1;
+                } else {
+                currentStreakCounter = 1;
+                }
             }
-        }
 
-        previousDate = dateKey;
+            previousDate = dateKey;
 
-        if (currentStreakCounter > maxStreak) {
-            maxStreak = currentStreakCounter;
-        }
+            if (currentStreakCounter > maxStreak) {
+                maxStreak = currentStreakCounter;
+            }
 
-        if (index === uniqueDates.length - 1) {
-            currentStreak = currentStreakCounter;
-        }
+            if (index === uniqueDates.length - 1) {
+                currentStreak = currentStreakCounter;
+            }
         });
 
         // 🧠 --- Ajuste inteligente de racha ---
-        const lastDate = new Date(uniqueDates[uniqueDates.length - 1]);
-        const today = new Date();
+            const normalizeDate = (d) => {
+            const date = new Date(d);
+            date.setHours(0, 0, 0, 0);
+            return date;
+        };
+
+        const lastDate = normalizeDate(uniqueDates[uniqueDates.length - 1]);
+        const today = normalizeDate(new Date());
         const diffWithToday = Math.round(
-        (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+            (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
         );
+
 
         // 🟢 Caso 1: Último hábito fue hoy → racha actual válida
         if (diffWithToday === 0) {
-        return { current: currentStreak, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
+            console.log("caso 0")
+            return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
         }
 
         // 🟡 Caso 2: Último hábito fue ayer → mantener racha (aún no ha hecho nada hoy)
         if (diffWithToday === 1) {
-        return { current: currentStreak, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
+            console.log("caso 1")
+            return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
         }
 
         // 🔴 Caso 3: Han pasado 2 o más días → se rompe la racha
         if (diffWithToday > 1) {
-        return { current: 0, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
+            console.log("caso 2")
+            return { current: 0, max: Math.max(maxStreak, currentStreak) };
         }
 
-        return { current: currentStreak, max: Math.max(maxStreak, currentStreak, maxUserStreak) };
+        console.lon("caso 3")
+        return { current: currentStreak, max: Math.max(maxStreak, currentStreak) };
     },
     [getDateKey]
     );

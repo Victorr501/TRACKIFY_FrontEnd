@@ -5,12 +5,17 @@ import AppNavigator from "./src/navigation/AppNavigator";
 import { jwtDecode } from "jwt-decode";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import {initializeNotifications, getFcmToken, setupTokenRefreshListener, setupForegroundNotificationListener,} from "./src/utils/notifications";
+
+
 export default function App() {
   const [isLogged, setIsLogged] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
+      const token_not = await initializeNotifications();
+      console.log("📲 Token Expo obtenido:", token_not);
       const token = await AsyncStorage.getItem('access_token');
       if (!token) {
         setIsLogged(false);

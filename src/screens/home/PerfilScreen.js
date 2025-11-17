@@ -163,7 +163,7 @@ const PerfilScreen = ({navigation}) => {
                 await AuthService.loadUser();
                 navigation.replace("Login")
             } finally {
-              setIsLoading(false);
+                setIsLoading(false);
             }
         };
         loadUser();

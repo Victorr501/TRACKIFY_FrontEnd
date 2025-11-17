@@ -5,6 +5,7 @@ import PerfilScreen from './home/PerfilScreen';
 import CrearHabitoScreen from './home/CrearHabitoScreen';
 import RachaScreen from './home/RachaScreen';
 import HabitosScreen from './home/HabitosScreen';
+import AmigosScreen from './home/AmigosScreen';
 
 
 
@@ -40,6 +41,13 @@ const BottomTabBar = ({ onTabPress }) => {
         onPress={() => handlePress('racha')}
       >
         <Text style={styles.tabIcon}>🔥</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={[styles.tabButton, activeTab === 'amigos'&& styles.activeTab]}
+        onPress={() => handlePress('amigos')}
+      >
+        <Text style={styles.tabIcon}>👥</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -90,6 +98,8 @@ const HomeScreen = ({navigation}) => {
           return <CrearHabitoScreen />;
         case 'racha':
           return <RachaScreen />;
+        case 'amigos':
+          return <AmigosScreen/>
         case 'perfil':
           return <PerfilScreen navigation={navigation} />;
         default:
